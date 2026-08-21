@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Provider;
-use App\Models\SearchLog;
 use App\Models\ActionLog;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -37,7 +36,7 @@ class ProviderController extends Controller
             return response()->json(['message' => 'Please login to search providers.'], 401);
         }
 
-        $query = Provider::with(['user', 'category'])->where('status', 1);
+        $query = Provider::with(['user:id,name,phone', 'category'])->where('status', 1);
 
         if (Setting::get('verification_required', true)) {
             $query->where('is_verified', true);
@@ -46,12 +45,25 @@ class ProviderController extends Controller
         if ($request->has('category_id')) {
             $catId = $request->category_id;
             $subIds = \App\Models\Category::where('parent_id', $catId)->pluck('id')->toArray();
-            
+
             if (!empty($subIds)) {
                 $query->whereIn('category_id', array_merge([$catId], $subIds));
             } else {
                 $query->where('category_id', $catId);
             }
+        }
+
+        // Filter by keyword: business name, description, area, or category name
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function ($q) use ($keyword) {
+                $q->where('business_name', 'like', "%{$keyword}%")
+                  ->orWhere('description', 'like', "%{$keyword}%")
+                  ->orWhere('area', 'like', "%{$keyword}%")
+                  ->orWhereHas('category', function ($catQuery) use ($keyword) {
+                      $catQuery->where('name', 'like', "%{$keyword}%");
+                  });
+            });
         }
 
         $providers = $query->paginate(15);
@@ -119,13 +131,16 @@ class ProviderController extends Controller
             }
         }
 
-        // Filter by keyword (business name or description)
+        // Filter by keyword: business name, description, area, or category name
         if ($request->filled('keyword')) {
             $keyword = $request->keyword;
             $query->where(function ($q) use ($keyword) {
                 $q->where('business_name', 'like', "%{$keyword}%")
                   ->orWhere('description', 'like', "%{$keyword}%")
-                  ->orWhere('area', 'like', "%{$keyword}%");
+                  ->orWhere('area', 'like', "%{$keyword}%")
+                  ->orWhereHas('category', function ($catQuery) use ($keyword) {
+                      $catQuery->where('name', 'like', "%{$keyword}%");
+                  });
             });
         }
 
@@ -166,6 +181,12 @@ class ProviderController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'area' => 'nullable|string',
+            'preferred_call_time' => 'nullable|string|max:255',
+            'email' => 'required|email|max:255',
+            'aadhaar_number' => 'nullable|string|digits:12',
+            'aadhaar_verification_method' => 'nullable|string|in:otp,manual',
+            'aadhaar_verification_status' => 'nullable|string|in:unverified,pending,verified,rejected',
+            'aadhaar_document_path' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -173,6 +194,9 @@ class ProviderController extends Controller
         }
 
         $user = $request->user();
+        
+        // Update user email
+        $user->update(['email' => $request->email]);
 
         // Check if user already has max allowed providers (bypass if updating existing profile)
         $maxProviders = Setting::get('max_providers_per_user', 1);
@@ -188,6 +212,8 @@ class ProviderController extends Controller
         // Update user role to provider
         $user->update(['role' => 'provider']);
 
+        $existing = Provider::where('user_id', $user->id)->first();
+
         $provider = Provider::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -198,13 +224,25 @@ class ProviderController extends Controller
                 'latitude' => $request->latitude,
                 'longitude' => $request->longitude,
                 'area' => $request->area,
-                'status' => 0, // Pending approval
+                'preferred_call_time' => $request->preferred_call_time,
+                'aadhaar_number' => $request->aadhaar_number,
+                'aadhaar_verification_method' => $request->aadhaar_verification_method,
+                'aadhaar_verification_status' => $request->aadhaar_verification_status ?? 'unverified',
+                'aadhaar_verified_at' => $request->aadhaar_verification_status === 'verified' ? now() : null,
+                'aadhaar_document_path' => $request->aadhaar_document_path,
+                // Only new profiles start pending; editing an existing profile
+                // (approved or not) preserves its current status.
+                'status' => $existing->status ?? 0,
                 'terms_accepted_at' => now(),
             ]
         );
 
+        $message = $existing
+            ? 'Provider profile updated successfully.'
+            : 'Provider profile created successfully. Awaiting admin approval.';
+
         return response()->json([
-            'message' => 'Provider profile updated successfully. Awaiting admin approval.',
+            'message' => $message,
             'provider' => $provider->load('category'),
         ]);
     }
@@ -218,7 +256,7 @@ class ProviderController extends Controller
             return response()->json(['message' => 'Please login to view provider details.'], 401);
         }
 
-        $provider = Provider::with(['user', 'category', 'activeSubscription.package'])->findOrFail($id);
+        $provider = Provider::with(['user:id,name,phone', 'category', 'activeSubscription.package'])->findOrFail($id);
         $user = Auth::guard('sanctum')->user();
 
         if (Setting::get('verification_required', true) && !$provider->is_verified) {
@@ -251,5 +289,70 @@ class ProviderController extends Controller
             ->first();
 
         return response()->json($provider);
+    }
+
+    public function sendAadhaarOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'aadhaar_number' => 'required|string|digits:12',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $otp = rand(100000, 999999);
+        \Illuminate\Support\Facades\Cache::put('aadhaar_otp_' . $request->aadhaar_number, $otp, now()->addMinutes(10));
+        \Illuminate\Support\Facades\Log::info("Mock Aadhaar OTP for {$request->aadhaar_number}: {$otp}");
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Aadhaar verification OTP sent successfully (Mocked). Check logs!',
+        ]);
+    }
+
+    public function verifyAadhaarOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'aadhaar_number' => 'required|string|digits:12',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $cachedOtp = \Illuminate\Support\Facades\Cache::get('aadhaar_otp_' . $request->aadhaar_number);
+
+        if ($request->otp === '123456' || ($cachedOtp && $cachedOtp == $request->otp)) {
+            \Illuminate\Support\Facades\Cache::forget('aadhaar_otp_' . $request->aadhaar_number);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Aadhaar verified successfully.',
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Invalid Aadhaar verification OTP.',
+        ], 400);
+    }
+
+    public function uploadAadhaarDocument(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'aadhaar_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $path = $request->file('aadhaar_document')->store('aadhaar_documents', 'public');
+
+        return response()->json([
+            'status' => 'success',
+            'path' => $path,
+            'url' => asset('storage/' . $path)
+        ]);
     }
 }

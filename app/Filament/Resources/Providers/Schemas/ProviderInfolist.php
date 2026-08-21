@@ -29,6 +29,8 @@ class ProviderInfolist
                     ->placeholder('-'),
                 TextEntry::make('area')
                     ->placeholder('-'),
+                TextEntry::make('preferred_call_time')
+                    ->placeholder('-'),
                 TextEntry::make('rating')
                     ->numeric(),
                 TextEntry::make('status')
@@ -38,6 +40,31 @@ class ProviderInfolist
                     ->placeholder('-'),
                 TextEntry::make('updated_at')
                     ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('aadhaar_number')
+                    ->placeholder('-'),
+                TextEntry::make('aadhaar_verification_method')
+                    ->placeholder('-'),
+                TextEntry::make('aadhaar_verification_status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'verified' => 'success',
+                        'pending' => 'warning',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    }),
+                TextEntry::make('aadhaar_verified_at')
+                    ->dateTime()
+                    ->placeholder('-'),
+                TextEntry::make('aadhaar_rejection_reason')
+                    ->label('Rejection Reason')
+                    ->placeholder('-')
+                    ->visible(fn ($record) => $record->aadhaar_verification_status === 'rejected'),
+                TextEntry::make('aadhaar_document_path')
+                    ->label('Aadhaar Document')
+                    ->formatStateUsing(fn ($state) => $state ? 'View / Download Document' : '-')
+                    ->url(fn ($state) => $state ? asset('storage/' . $state) : null)
+                    ->openUrlInNewTab()
                     ->placeholder('-'),
             ]);
     }

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Kyc\KycProviderInterface;
+use App\Services\Kyc\SetuKycProvider;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +13,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Swap this binding to switch KYC vendors (e.g. BharatEVerifyKycProvider)
+        // without touching KycService or any controller that depends on it.
+        $this->app->bind(KycProviderInterface::class, SetuKycProvider::class);
     }
 
     /**

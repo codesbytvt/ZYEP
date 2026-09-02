@@ -21,6 +21,12 @@ class Provider extends Model
         'status',
         'is_verified',
         'terms_accepted_at',
+        'kyc_status',
+        'kyc_verified_at',
+    ];
+
+    protected $casts = [
+        'kyc_verified_at' => 'datetime',
     ];
 
     public function user()
@@ -47,5 +53,15 @@ class Provider extends Model
                       ->orWhere('expires_at', '>', now());
             })
             ->latestOfMany();
+    }
+
+    public function kycVerifications()
+    {
+        return $this->hasMany(KycVerification::class);
+    }
+
+    public function latestKycVerification()
+    {
+        return $this->hasOne(KycVerification::class)->latestOfMany();
     }
 }

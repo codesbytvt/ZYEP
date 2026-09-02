@@ -25,9 +25,11 @@ class KycVerification extends Model
     ];
 
     protected $casts = [
-        // Encrypted at rest — this column holds the vendor's raw API response and
-        // must never be readable directly from a DB dump or backup.
-        'raw_response' => 'encrypted',
+        // Encrypted at rest — this column holds the vendor's raw API response
+        // (an array/JSON payload, hence 'encrypted:array' rather than plain
+        // 'encrypted', which only handles scalar strings) and must never be
+        // readable directly from a DB dump or backup.
+        'raw_response' => 'encrypted:array',
         'initiated_at' => 'datetime',
         'verified_at' => 'datetime',
         'expires_at' => 'datetime',

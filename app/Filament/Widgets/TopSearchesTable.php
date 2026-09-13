@@ -34,6 +34,6 @@ class TopSearchesTable extends BaseWidget
                     ->badge()
                     ->color('primary'),
             ])
-            ->heading('Trending Search Terms');
+            ->heading('Top Searches');
     }
 }

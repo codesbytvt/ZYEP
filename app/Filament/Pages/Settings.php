@@ -70,7 +70,7 @@ class Settings extends Page implements HasForms
                                     ->description('Basic platform configuration.')
                                     ->schema([
                                         TextInput::make('app_name')
-                                            ->label('Platform Name')
+                                            ->label('App Name')
                                             ->placeholder('ZYEP')
                                             ->required()
                                             ->columnSpanFull(),
@@ -83,7 +83,7 @@ class Settings extends Page implements HasForms
                                     ->description('Manage how providers are approved and verified.')
                                     ->schema([
                                         Select::make('provider_auto_approval')
-                                            ->label('Auto Approval Policy')
+                                            ->label('Auto-Approval Rule')
                                             ->options([
                                                 'paid only' => 'Paid Only (Auto-approve after payment)',
                                                 'none' => 'None (Manual approval by admin)',

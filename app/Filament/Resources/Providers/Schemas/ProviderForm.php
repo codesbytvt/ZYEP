@@ -28,6 +28,7 @@ class ProviderForm
                     ->default(null)
                     ->columnSpanFull(),
                 TextInput::make('experience')
+                    ->label('Years of Experience')
                     ->required()
                     ->numeric()
                     ->default(0),
@@ -38,17 +39,22 @@ class ProviderForm
                     ->numeric()
                     ->default(null),
                 TextInput::make('area')
+                    ->label('Service Area')
                     ->default(null),
                 TextInput::make('rating')
                     ->required()
                     ->numeric()
                     ->default(0),
-                TextInput::make('status')
+                \Filament\Forms\Components\Select::make('status')
+                    ->options([
+                        0 => 'Pending',
+                        1 => 'Approved',
+                        2 => 'Rejected',
+                    ])
                     ->required()
-                    ->numeric()
                     ->default(0),
                 \Filament\Forms\Components\Toggle::make('is_verified')
-                    ->label('Is Verified')
+                    ->label('Verified')
                     ->default(false),
             ]);
     }

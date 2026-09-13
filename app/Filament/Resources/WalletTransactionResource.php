@@ -22,7 +22,7 @@ class WalletTransactionResource extends Resource
 
     protected static string | \UnitEnum | null $navigationGroup = 'Wallet';
 
-    protected static ?string $navigationLabel = 'Transaction Ledger';
+    protected static ?string $navigationLabel = 'Wallet Transactions';
 
     public static function canCreate(): bool
     {

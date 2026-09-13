@@ -16,7 +16,7 @@ class StatsOverview extends BaseWidget
         $today = Carbon::today();
         
         return [
-            Stat::make('Total Interactions Today', ActionLog::whereDate('created_at', $today)->count())
+            Stat::make('Activity Today', ActionLog::whereDate('created_at', $today)->count())
                 ->description('Clicks, Views, and Searches')
                 ->descriptionIcon('heroicon-m-cursor-arrow-rays')
                 ->color('success'),

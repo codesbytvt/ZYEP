@@ -34,7 +34,7 @@ class AuthController extends Controller
         $this->otpService->sendOTP($request->phone);
 
         return response()->json([
-            'message' => 'OTP sent successfully (Mocked). Check your logs!',
+            'message' => 'OTP sent successfully.',
         ]);
     }
 

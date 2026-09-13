@@ -32,6 +32,7 @@ class ProvidersTable
                     ->suffix(' years')
                     ->sortable(),
                 TextColumn::make('area')
+                    ->label('Service Area')
                     ->searchable(),
                 IconColumn::make('status')
                     ->options([

@@ -42,7 +42,7 @@ class Settings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'app_name' => Setting::get('app_name', 'LocalSahayi'),
+            'app_name' => Setting::get('app_name', 'ZYEP'),
             'provider_auto_approval' => Setting::get('provider_auto_approval', 'none'),
             'verification_required' => Setting::get('verification_required', true),
             'max_providers_per_user' => Setting::get('max_providers_per_user', 1),
@@ -71,7 +71,7 @@ class Settings extends Page implements HasForms
                                     ->schema([
                                         TextInput::make('app_name')
                                             ->label('Platform Name')
-                                            ->placeholder('LocalSahayi')
+                                            ->placeholder('ZYEP')
                                             ->required()
                                             ->columnSpanFull(),
                                     ]),

@@ -14,7 +14,7 @@ class SettingsController extends Controller
     public function getPublicSettings(Request $request)
     {
         return response()->json([
-            'app_name' => Setting::get('app_name', 'LocalSahayi'),
+            'app_name' => Setting::get('app_name', 'ZYEP'),
             'demo_mode' => Setting::get('demo_mode', false),
             'customer_terms' => Setting::get('customer_terms', 'Please agree to our terms and conditions.'),
             'provider_terms' => Setting::get('provider_terms', 'Please agree to our provider terms.'),

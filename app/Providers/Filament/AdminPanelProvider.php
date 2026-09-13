@@ -23,10 +23,10 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $appName = 'LocalSahayi';
+        $appName = 'ZYEP';
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
-                $appName = \App\Models\Setting::get('app_name', 'LocalSahayi');
+                $appName = \App\Models\Setting::get('app_name', 'ZYEP');
             }
         } catch (\Exception $e) {
             // Ignore DB errors during setup/migrations

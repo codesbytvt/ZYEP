@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7e098a577b5045534e463d26fd6152c9",
+    "content-hash": "5a83b4945aaf489f42f014366546fb28",
     "packages": [
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -3469,6 +3469,60 @@
                 }
             ],
             "time": "2026-01-02T08:56:05+00:00"
+        },
+        {
+            "name": "mysteryinfosolutions/yourbulksms",
+            "version": "v1.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/mysteryinfosolutions/yourbulksms.git",
+                "reference": "a2b2cbd4496c6aa891b6103a0fef05d87f765893"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mysteryinfosolutions/yourbulksms/zipball/a2b2cbd4496c6aa891b6103a0fef05d87f765893",
+                "reference": "a2b2cbd4496c6aa891b6103a0fef05d87f765893",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "php": "^7.4|^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "YourBulkSms": "MysteryInfo\\YourBulkSms\\Laravel\\Facades\\YourBulkSms"
+                    },
+                    "providers": [
+                        "MysteryInfo\\YourBulkSms\\Laravel\\YourBulkSmsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "MysteryInfo\\YourBulkSms\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Antigravity",
+                    "email": "antigravity@gemini.google"
+                }
+            ],
+            "description": "A framework-agnostic PHP SDK for YourBulkSMS gateway with optional Laravel support.",
+            "support": {
+                "issues": "https://github.com/mysteryinfosolutions/yourbulksms/issues",
+                "source": "https://github.com/mysteryinfosolutions/yourbulksms/tree/v1.0.0"
+            },
+            "time": "2026-06-25T14:12:51+00:00"
         },
         {
             "name": "nesbot/carbon",

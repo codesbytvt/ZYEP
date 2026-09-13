@@ -37,7 +37,7 @@ class ProviderController extends Controller
             return response()->json(['message' => 'Please login to search providers.'], 401);
         }
 
-        $query = Provider::with(['user', 'category'])->where('status', 1);
+        $query = Provider::with(['user:id,name,phone', 'category'])->where('status', 1);
 
         if (Setting::get('verification_required', true)) {
             $query->where('is_verified', true);
@@ -218,7 +218,7 @@ class ProviderController extends Controller
             return response()->json(['message' => 'Please login to view provider details.'], 401);
         }
 
-        $provider = Provider::with(['user', 'category', 'activeSubscription.package'])->findOrFail($id);
+        $provider = Provider::with(['user:id,name,phone', 'category', 'activeSubscription.package'])->findOrFail($id);
         $user = Auth::guard('sanctum')->user();
 
         if (Setting::get('verification_required', true) && !$provider->is_verified) {

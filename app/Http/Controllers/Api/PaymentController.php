@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
+use App\Models\Provider;
 use App\Models\Setting;
 use App\Models\Subscription;
 use App\Models\SubscriptionPackage;
@@ -34,6 +35,16 @@ class PaymentController extends Controller
             'package_id' => 'required|exists:subscription_packages,id',
             'provider_id' => 'nullable|exists:mproviders,id',
         ]);
+
+        if ($request->provider_id) {
+            $ownsProvider = Provider::where('id', $request->provider_id)
+                ->where('user_id', $request->user()->id)
+                ->exists();
+
+            if (!$ownsProvider) {
+                return response()->json(['message' => 'This provider listing does not belong to you.'], 403);
+            }
+        }
 
         try {
             $package = SubscriptionPackage::findOrFail($request->package_id);
@@ -106,14 +117,19 @@ class PaymentController extends Controller
             $api->utility->verifyPaymentSignature($attributes);
 
             DB::transaction(function () use ($request) {
-                // Update Payment
-                Payment::where('order_id', $request->razorpay_order_id)->update([
-                    'payment_id' => $request->razorpay_payment_id,
-                    'status' => 'success'
-                ]);
+                // Update Payment -- scoped to the caller so one user can't
+                // activate a subscription off an order_id that isn't theirs.
+                Payment::where('order_id', $request->razorpay_order_id)
+                    ->where('user_id', $request->user()->id)
+                    ->update([
+                        'payment_id' => $request->razorpay_payment_id,
+                        'status' => 'success'
+                    ]);
 
                 // Activate Subscription
-                $sub = Subscription::where('payment_id', $request->razorpay_order_id)->first();
+                $sub = Subscription::where('payment_id', $request->razorpay_order_id)
+                    ->where('user_id', $request->user()->id)
+                    ->first();
                 if ($sub) {
                     $package = $sub->package;
                     $startsAt = Carbon::now();

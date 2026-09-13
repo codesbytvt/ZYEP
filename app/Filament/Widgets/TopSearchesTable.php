@@ -25,6 +25,12 @@ class TopSearchesTable extends BaseWidget
                     ->orderByDesc('search_count')
                     ->limit(10)
             )
+            // Filament appends a secondary "order by <table>.id" tiebreaker
+            // for every table by default, but the raw (non-aggregated) id
+            // column isn't valid in this GROUP BY query under
+            // only_full_group_by SQL mode. Not needed here anyway since
+            // MIN(id) already makes each row's identity deterministic.
+            ->defaultKeySort(false)
             ->columns([
                 Tables\Columns\TextColumn::make('keyword')
                     ->label('Search Keyword')

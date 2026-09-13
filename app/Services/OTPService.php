@@ -37,10 +37,9 @@ class OTPService
             // forcing the dedicated OTP route -- not every account has that route
             // provisioned/funded, and forcing it here fails sends even when a
             // perfectly good route (e.g. Transactional) is available and paid for.
-            $response = $this->smsClient->send(
-                $phone,
-                "Your ZYEP verification code is {$otp}. Valid for 10 minutes.",
-            );
+            $message = str_replace('{#num#}', (string) $otp, config('services.otp.sms_template'));
+
+            $response = $this->smsClient->send($phone, $message);
 
             $delivered = $this->wasAccepted($response);
 

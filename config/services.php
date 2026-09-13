@@ -33,6 +33,16 @@ return [
         'secret' => env('RAZORPAY_SECRET'),
     ],
 
+    'otp' => [
+        // {#num#} is replaced with the generated code. Must match the DLT
+        // template registered with the SMS gateway/operator verbatim, or
+        // transactional/OTP sends will be rejected.
+        'sms_template' => env(
+            'OTP_SMS_TEMPLATE',
+            'Your OTP to complete your HolyFaith account registration is {#num#}. This OTP is valid for 10 minutes. Please do not share - Mystery Info Solutions',
+        ),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

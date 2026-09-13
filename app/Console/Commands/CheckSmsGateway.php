@@ -20,23 +20,37 @@ class CheckSmsGateway extends Command
             return self::FAILURE;
         }
 
-        $this->info('Checking YourBulkSms credentials (authkey: ' . substr($authkey, 0, 4) . '...' . substr($authkey, -4) . ')');
+        $routeType = (int) config('yourbulksms.route', 1);
+
+        $this->info('Checking YourBulkSms credentials (authkey: ' . substr($authkey, 0, 4) . '...' . substr($authkey, -4) . ", route type {$routeType})");
 
         try {
-            $response = $client->getBalance();
+            $response = $client->getBalance($routeType);
         } catch (\Throwable $e) {
             $this->error('Request to YourBulkSms failed: ' . $e->getMessage());
             return self::FAILURE;
         }
 
-        if (!$response->success) {
-            $this->error("Gateway did not confirm a valid account -- {$response->message}");
-            $this->line('Raw response: ' . trim((string) $response->raw));
-            $this->line('Check that YOURBULKSMS_AUTHKEY is your real account key, not the package\'s docs example.');
+        $raw = trim((string) $response->raw);
+
+        // The package's ResponseParser doesn't recognize this gateway's plain-text
+        // "Total Balance : N" reply, so it marks $response->success false even for
+        // a real balance -- parse the raw text ourselves rather than trust that flag.
+        if (preg_match('/Total Balance\s*:\s*(\d+)/i', $raw, $matches)) {
+            $balance = (int) $matches[1];
+
+            if ($balance > 0) {
+                $this->info("Credentials valid for route {$routeType}. Balance: {$balance}");
+                return self::SUCCESS;
+            }
+
+            $this->error("Route {$routeType} has a zero balance on this account.");
+            $this->line('Either top up that route, or set YOURBULKSMS_ROUTE to a route this account has credits on.');
             return self::FAILURE;
         }
 
-        $this->info("Credentials valid. Account balance: {$response->balance}");
-        return self::SUCCESS;
+        $this->error("Gateway did not return a recognizable balance -- {$response->message}");
+        $this->line('Raw response: ' . $raw);
+        return self::FAILURE;
     }
 }

@@ -4,7 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
-use MysteryInfo\YourBulkSms\Support\Route;
+use MysteryInfo\YourBulkSms\DTO\SendSmsResponse;
 use MysteryInfo\YourBulkSms\YourBulkSmsClient;
 
 class OTPService
@@ -33,21 +33,43 @@ class OTPService
         }
 
         try {
+            // Let the client fall back to config('yourbulksms.route') rather than
+            // forcing the dedicated OTP route -- not every account has that route
+            // provisioned/funded, and forcing it here fails sends even when a
+            // perfectly good route (e.g. Transactional) is available and paid for.
             $response = $this->smsClient->send(
                 $phone,
                 "Your ZYEP verification code is {$otp}. Valid for 10 minutes.",
-                ['route' => Route::OTP],
             );
 
-            if (!$response->success) {
+            $delivered = $this->wasAccepted($response);
+
+            if (!$delivered) {
                 Log::error("YourBulkSms OTP send failed for {$phone}: {$response->message}");
             }
 
-            return $response->success;
+            return $delivered;
         } catch (\Throwable $e) {
             Log::error("YourBulkSms OTP send error for {$phone}: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * The package's ResponseCode table only recognizes the older plain-text
+     * API's numeric codes (001-023) and treats anything else -- including this
+     * gateway's own JSON success code "000" -- as a failure, even though the
+     * submission was accepted. Check the raw JSON status directly as well.
+     */
+    private function wasAccepted(SendSmsResponse $response): bool
+    {
+        if ($response->success) {
+            return true;
+        }
+
+        $decoded = is_array($response->data) ? $response->data : json_decode((string) $response->raw, true);
+
+        return isset($decoded['Status']) && strcasecmp($decoded['Status'], 'Success') === 0;
     }
 
     /**

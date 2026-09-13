@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Provider;
-use App\Models\SearchLog;
 use App\Models\ActionLog;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -188,23 +187,29 @@ class ProviderController extends Controller
         // Update user role to provider
         $user->update(['role' => 'provider']);
 
-        $provider = Provider::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'business_name' => $request->business_name,
-                'category_id' => $request->category_id,
-                'description' => $request->description,
-                'experience' => $request->experience ?? 0,
-                'latitude' => $request->latitude,
-                'longitude' => $request->longitude,
-                'area' => $request->area,
-                'status' => 0, // Pending approval
-                'terms_accepted_at' => now(),
-            ]
-        );
+        $attributes = [
+            'business_name' => $request->business_name,
+            'category_id' => $request->category_id,
+            'description' => $request->description,
+            'experience' => $request->experience ?? 0,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'area' => $request->area,
+            'terms_accepted_at' => now(),
+        ];
+
+        // Only a brand-new profile starts pending; editing an already-approved
+        // listing (e.g. fixing a typo) must not pull it from search results.
+        if (!$hasProfile) {
+            $attributes['status'] = 0;
+        }
+
+        $provider = Provider::updateOrCreate(['user_id' => $user->id], $attributes);
 
         return response()->json([
-            'message' => 'Provider profile updated successfully. Awaiting admin approval.',
+            'message' => $hasProfile
+                ? 'Business details updated successfully.'
+                : 'Provider profile created successfully. Awaiting admin approval.',
             'provider' => $provider->load('category'),
         ]);
     }
